@@ -290,7 +290,7 @@ MSU_FadeUpdate:
 +
 	sta fadeVolume
 	sta.w !MSU_AUDIO_VOLUME
-	beq .SetToIdle
+	beq .FadeOutCompleted
 	bra .MSUNotFound
 	
 .FadeInUpdate:
@@ -306,6 +306,9 @@ MSU_FadeUpdate:
 	beq .SetToIdle
 	bra .MSUNotFound
 
+.FadeOutCompleted
+	lda #$00
+	sta.w !MSU_AUDIO_CONTROL
 .SetToIdle:
 	lda.b #FADE_STATE_IDLE
 	sta fadeState
