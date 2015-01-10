@@ -22,8 +22,7 @@ constant MSU_STATUS_DATA_BUSY(%10000000)
 if {defined EMULATOR_VOLUME} {
 	constant FULL_VOLUME($50)
 	constant DUCKED_VOLUME($20)
-}
-if !{defined EMULATOR_VOLUME} {
+} else {
 	constant FULL_VOLUME($FF)
 	constant DUCKED_VOLUME($60)
 }
