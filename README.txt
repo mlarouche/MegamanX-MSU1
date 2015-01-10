@@ -8,6 +8,10 @@ The hack is made for the 1.1 version of the game. Tested on SD2SNES, higan 094. 
 
 The patched ROM needs to be named mmx_msu1.sfc.
 
+Note they are two IPS patches:
+- mmx_msu1_emulator.ips is the one to use for proper volume in emulators.
+- mmx_msu1.ips for SD2SNES
+
 ===============
 = Using higan =
 ===============
@@ -37,7 +41,7 @@ Source is availabe on GitHub: https://github.com/mlarouche/MegamanX-MSU1
 
 To compile the hack you need
 
-* asar 1.36 (http://www.smwcentral.net/?p=section&a=details&id=6000)
+* bass v14 (https://web.archive.org/web/20140710190910/http://byuu.org/files/bass_v14.tar.xz)
 * wav2msu (http://helmet.kafuka.org/thepile/Wav2msu)
 
 The rom needs to be named mmx_msu1.sfc and be the version 1.1 of the game.

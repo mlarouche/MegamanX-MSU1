@@ -1,319 +1,335 @@
-lorom
+arch snes.cpu
 
-; MSU memory map I/O
-MSU_STATUS = $2000
-MSU_ID = $2002
-MSU_AUDIO_TRACK_LO = $2004
-!MSU_AUDIO_TRACK_HI = $2005
-!MSU_AUDIO_VOLUME = $2006
-!MSU_AUDIO_CONTROL = $2007
+// MSU memory map I/O
+constant MSU_STATUS($2000)
+constant MSU_ID($2002)
+constant MSU_AUDIO_TRACK_LO($2004)
+constant MSU_AUDIO_TRACK_HI($2005)
+constant MSU_AUDIO_VOLUME($2006)
+constant MSU_AUDIO_CONTROL($2007)
 
-; SPC communication ports
-SPC_PORT_0 = $2140
+// SPC communication ports
+constant SPC_COMM_0($2140)
 
-; MSU_STATUS possible values
-MSU_STATUS_TRACK_MISSING = $8
-MSU_STATUS_AUDIO_PLAYING = %00010000
-MSU_STATUS_AUDIO_REPEAT  = %00100000
-MSU_STATUS_AUDIO_BUSY    = $40
-MSU_STATUS_DATA_BUSY     = %10000000
+// MSU_STATUS possible values
+constant MSU_STATUS_TRACK_MISSING($8)
+constant MSU_STATUS_AUDIO_PLAYING(%00010000)
+constant MSU_STATUS_AUDIO_REPEAT(%00100000)
+constant MSU_STATUS_AUDIO_BUSY($40)
+constant MSU_STATUS_DATA_BUSY(%10000000)
 
-; Constants
-FULL_VOLUME = $FF
-DUCKED_VOLUME = $60
+// Constants
+if {defined EMULATOR_VOLUME} {
+	constant FULL_VOLUME($50)
+	constant DUCKED_VOLUME($20)
+}
+if !{defined EMULATOR_VOLUME} {
+	constant FULL_VOLUME($FF)
+	constant DUCKED_VOLUME($60)
+}
 
-FADE_DELTA = ($FF/45)
+constant FADE_DELTA(FULL_VOLUME/45)
 
-; Variables
-fadeState = $180
-fadeVolume = $181
+// Variables
+variable fadeState($180)
+variable fadeVolume($181)
 
-; FADE_STATE possibles values
-FADE_STATE_IDLE = $00
-FADE_STATE_FADEOUT = $01
-FADE_STATE_FADEIN = $02
+// FADE_STATE possibles values
+constant FADE_STATE_IDLE($00)
+constant FADE_STATE_FADEOUT($01)
+constant FADE_STATE_FADEIN($02)
 
-; Fade-in/Fade-out hijack in NMI routine
-org $80817A
+// **********
+// * Macros *
+// **********
+// seek converts SNES LoROM address to physical address
+macro seek(variable offset) {
+  origin ((offset & $7F0000) >> 1) | (offset & $7FFF)
+  base offset
+}
+
+macro CheckMSUPresence(labelToJump) {
+	lda.w MSU_ID
+	cmp.b #'S'
+	bne {labelToJump}
+}
+
+// Fade-in/Fade-out hijack in NMI routine
+seek($80817A)
 	jsr MSU_FadeUpdate
 	
-; Add a hook to where the sound effects/special commands are played
-org $80885B
+// Add a hook to where the sound effects/special commands are played
+seek($80885B)
 	jsr MSU_SoundEffectsAndCommand
 
-; At Capcom logo, init the required variables
-org $808613
+// At Capcom logo, init the required variables
+seek($808613)
 	jsr MSU_Init
 
-; Play music from Options Screen, All music after level music, Password Screen, Stage Select
-org $8087AA
+// Play music from Options Screen, All music after level music, Password Screen, Stage Select
+seek($8087AA)
 	jsr MSU_Main
 
-; Play Title Screen
-org $808D8F
+// Play Title Screen
+seek($808D8F)
 	jsr MSU_Main
 	
-; Play music at level load
-org $809A2D
+// Play music at level load
+seek($809A2D)
 	jmp MSU_Main
 
-; Play stage selected jingle
-org $809709
+// Play stage selected jingle
+seek($809709)
 	jsr MSU_Main
 	
-; Ending ??
-org $809CFA
+// Ending ??
+seek($809CFA)
 	jsr MSU_Main
 
-; Got a weapon
-org $80ABD6
+// Got a weapon
+seek($80ABD6)
 	jsr MSU_Main
 
-; A = Music to play + $10
-org $80FBCE
-MSU_Main:
+// A = Music to play + $10
+seek($80FBD0)
+scope MSU_Main: {
 	php
-; Backup A and Y in 16bit mode
+// Backup A and Y in 16bit mode
 	rep #$30
 	pha
 	phy
 	
-	sep #$30 ; Set all registers to 8 bit mode
+	sep #$30 // Set all registers to 8 bit mode
 	tay
 	
-	; Check if MSU-1 is present
-	lda MSU_ID
-	cmp #'S'
-	bne .MSUNotFound
+	// Check if MSU-1 is present
+	CheckMSUPresence(MSUNotFound)
 	
-.MSUFound:
-	; Set track
+	// Set track
 	tya
 	clc
-	sbc #$F
+	sbc.b #$0F
 	tay
-	sta MSU_AUDIO_TRACK_LO
-	stz !MSU_AUDIO_TRACK_HI
+	sta.w MSU_AUDIO_TRACK_LO
+	stz.w MSU_AUDIO_TRACK_HI
 
-.CheckAudioStatus
-	lda MSU_STATUS
+CheckAudioStatus:
+	lda.w MSU_STATUS
 	
 	and.b #MSU_STATUS_AUDIO_BUSY
-	bne .CheckAudioStatus
+	bne CheckAudioStatus
 	
-	; Check if track is missing
-	lda MSU_STATUS
+	// Check if track is missing
+	lda.w MSU_STATUS
 	and.b #MSU_STATUS_TRACK_MISSING
-	bne .MSUNotFound
+	bne MSUNotFound
 	
-	; Play the song and add repeat if needed
+	// Play the song and add repeat if needed
 	jsr TrackNeedLooping
-	sta !MSU_AUDIO_CONTROL
+	sta.w MSU_AUDIO_CONTROL
 	
-	; Set volume
+	// Set volume
 	lda.b #FULL_VOLUME
-	sta.w !MSU_AUDIO_VOLUME
+	sta.w MSU_AUDIO_VOLUME
 	
-	; Reset the fade state machine
-	lda #$00
-	sta fadeState
-	
-	rep #$30
-	ply
-	pla
-	plp
-	rts
-	
-; Call original routine if MSU-1 is not found
-.MSUNotFound:
-	rep #$30
-	ply
-	pla
-	plp
-	
-	jsr $87B0
-	rts
-
-MSU_Init:
-	php
-	sep #$30
-	pha
-	
-	; Check if MSU-1 is present
-	lda MSU_ID
-	cmp #'S'
-	bne .MSUNotFound
-	
-	; Set volume
-	lda.b #FULL_VOLUME
-	sta.w !MSU_AUDIO_VOLUME
-	
-	; Reset the fade state machine
+	// Reset the fade state machine
 	lda.b #$00
-	sta.l fadeState
+	sta.w fadeState
+	
+	rep #$30
+	ply
+	pla
+	plp
+	rts
+	
+// Call original routine if MSU-1 is not found
+MSUNotFound:
+	rep #$30
+	ply
+	pla
+	plp
+	
+	jsr $87B0
+	rts
+}
 
-.MSUNotFound
+scope MSU_Init: {
+	php
+	sep #$30
+	pha
+	
+	CheckMSUPresence(MSUNotFound)
+	
+	// Set volume
+	lda.b #FULL_VOLUME
+	sta.w MSU_AUDIO_VOLUME
+	
+	// Reset the fade state machine
+	lda.b #$00
+	sta.w fadeState
+
+MSUNotFound:
 	pla
 	plp
 	
 	jsr $87B0
 	
 	rts
+}
 
-TrackNeedLooping:
-; Capcom Jingle
-	cpy #$00
-	beq .noLooping
-; Title Screen
-	cpy #$0F
-	beq .noLooping
-; Victory Jingle 
-	cpy #$11
-	beq .noLooping
-; Stage Selected Jingle
-	cpy #$12
-	beq .noLooping
-; Got a Weapon 
-	cpy #$17
-	beq .noLooping
-; Boss Tension 1
-	cpy #$1E
-	beq .noLooping
-	lda #$03
+scope TrackNeedLooping: {
+// Capcom Jingle
+	cpy.b #$00
+	beq NoLooping
+// Title Screen
+	cpy.b #$0F
+	beq NoLooping
+// Victory Jingle
+	cpy.b #$11
+	beq NoLooping
+// Stage Selected Jingle
+	cpy.b #$12
+	beq NoLooping
+// Got a Weapon
+	cpy.b #$17
+	beq NoLooping
+// Boss Tension 1
+	cpy.b #$1E
+	beq NoLooping
+	lda.b #$03
 	rts
-.noLooping:
-	lda #$01
+NoLooping:
+	lda.b #$01
 	rts
+}
 	
-MSU_SoundEffectsAndCommand:
+scope MSU_SoundEffectsAndCommand: {
 	php
 	
 	sep #$30
 	pha
 	
-	lda MSU_ID
-	cmp #'S'
-	bne .MSUNotFound_SE
+	CheckMSUPresence(MSUNotFound)
 	
 	pla
-	; $F5 is a command to resume music
-	cmp #$F5
+	// $F5 is a command to resume music
+	cmp.b #$F5
 	beq .ResumeMusic
-	; $F6 is a command to fade-out music
-	cmp #$F6
+	// $F6 is a command to fade-out music
+	cmp.b #$F6
 	beq .StopMusic
-	; $FE is a command to raise volume back to full volume coming from pause menu
-	cmp #$FE
+	// $FE is a command to raise volume back to full volume coming from pause menu
+	cmp.b #$FE
 	beq .RaiseVolume
-	; $FF is a command to drop volume when going to pause menu
-	cmp #$FF
+	// $FF is a command to drop volume when going to pause menu
+	cmp.b #$FF
 	beq .DropVolume
-	; If not, play the sound as the game excepts to
+	// If not, play the sound as the game excepts to
 	bra .PlaySound
 	
 .ResumeMusic:
-	; Stop the SPC music if any
-	lda #$F6
-	sta SPC_PORT_0
+	// Stop the SPC music if any
+	lda.b #$F6
+	sta.w SPC_COMM_0
 	
-	; Resume music then fade-in to full volume
-	lda #$03
-	sta !MSU_AUDIO_CONTROL
+	// Resume music then fade-in to full volume
+	lda.b #$03
+	sta.w MSU_AUDIO_CONTROL
 	lda.b #FADE_STATE_FADEIN
-	sta fadeState
-	lda #$00
-	sta fadeVolume
+	sta.w fadeState
+	lda.b #$00
+	sta.w fadeVolume
 	bra .CleanupAndReturn
 
 .StopMusic:
-	sta SPC_PORT_0
+	sta.w SPC_COMM_0
 
-	lda MSU_STATUS
+	lda.w MSU_STATUS
 	and.b #MSU_STATUS_AUDIO_PLAYING
 	beq .CleanupAndReturn
 
-	; Fade-out current music then stop it
+	// Fade-out current music then stop it
 	lda.b #FADE_STATE_FADEOUT
-	sta fadeState
+	sta.w fadeState
 	lda.b #FULL_VOLUME
-	sta fadeVolume
+	sta.w fadeVolume
 	bra .CleanupAndReturn
 
 .RaiseVolume:
-	sta.w SPC_PORT_0
+	sta.w SPC_COMM_0
 	lda.b #FULL_VOLUME
-	sta.w !MSU_AUDIO_VOLUME
+	sta.w MSU_AUDIO_VOLUME
 	bra .CleanupAndReturn
 	
 .DropVolume:
-	sta.w SPC_PORT_0
+	sta.w SPC_COMM_0
 	lda.b #DUCKED_VOLUME
-	sta.w !MSU_AUDIO_VOLUME
+	sta.w MSU_AUDIO_VOLUME
 	bra .CleanupAndReturn
 	
-.MSUNotFound_SE:
+MSUNotFound:
 	pla
 .PlaySound:
-	sta SPC_PORT_0
+	sta.w SPC_COMM_0
 .CleanupAndReturn:
 	plp
 	rts
-	
-MSU_FadeUpdate:
-	; Original code I hijacked that increase the real frame counter
-	inc.w $0B9E
+}
+
+scope MSU_FadeUpdate: {
+	// Original code I hijacked that increase the real frame counter
+	inc $0B9E
 	
 	php
 	sep #$30
 	pha
 	
-	lda MSU_ID
-	cmp #'S'
-	bne .MSUNotFound
+	CheckMSUPresence(MSUNotFound)
 	
-	; Switch on fade state
-	lda fadeState
+	// Switch on fade state
+	lda.w fadeState
 	cmp.b #FADE_STATE_IDLE
-	beq .MSUNotFound
+	beq MSUNotFound
 	cmp.b #FADE_STATE_FADEOUT
 	beq .FadeOutUpdate
 	cmp.b #FADE_STATE_FADEIN
 	beq .FadeInUpdate
-	bra .MSUNotFound
+	bra MSUNotFound
 	
 .FadeOutUpdate:
-	lda fadeVolume
+	lda.w fadeVolume
 	sec
 	sbc.b #FADE_DELTA
 	bcs +
-	lda #$0
-+
-	sta fadeVolume
-	sta.w !MSU_AUDIO_VOLUME
+	lda.b #$00
++;
+	sta.w fadeVolume
+	sta.w MSU_AUDIO_VOLUME
 	beq .FadeOutCompleted
-	bra .MSUNotFound
+	bra MSUNotFound
 	
 .FadeInUpdate:
-	lda fadeVolume
+	lda.w fadeVolume
 	clc
 	adc.b #FADE_DELTA
 	bcc +
 	lda.b #FULL_VOLUME
-+
-	sta fadeVolume
-	sta.w !MSU_AUDIO_VOLUME
++;
+	sta.w fadeVolume
+	sta.w MSU_AUDIO_VOLUME
 	cmp.b #FULL_VOLUME
 	beq .SetToIdle
-	bra .MSUNotFound
+	bra MSUNotFound
 
-.FadeOutCompleted
-	lda #$00
-	sta.w !MSU_AUDIO_CONTROL
+.FadeOutCompleted:
+	lda.b #$00
+	sta.w MSU_AUDIO_CONTROL
 .SetToIdle:
 	lda.b #FADE_STATE_IDLE
-	sta fadeState
+	sta.w fadeState
 
-.MSUNotFound
+MSUNotFound:
 	pla
 	plp
 	rts
+}
