@@ -1,10 +1,10 @@
 Mega Man X MSU-1 hack
-Version 0.9 (Beta)
+Version 1.0
 by DarkShock
 
 This hack adds CD quality audio to Mega Man X using the MSU-1 chip invented by byuu.
 
-The hack is made for the 1.1 version of the game. Tested on SD2SNES, higan 094. BSNES 075 still have issues (probably a wrong setting in the xml file).
+The hack is made for the 1.1 version of the game. Tested on SD2SNES, higan 094. BSNES 075 have some issues.
 
 The patched ROM needs to be named mmx_msu1.sfc.
 
@@ -34,34 +34,17 @@ Just patch the ROM and launch the game. The pcm file needs to be in the same fol
 Drop the ROM file, mmx_msu1.msu and the .pcm files in any folder. (I really suggest creating a folder)
 Launch the game and voilà, enjoy !
 
-=============
-= Compiling =
-=============
-Source is availabe on GitHub: https://github.com/mlarouche/MegamanX-MSU1
+==============
+= Music Pack =
+==============
+TheRetromancer's Music pack, consisting of remix from YouTube and the PSP version:
+http://www.mediafire.com/download/7ksb28i343c2bib/Mega_Man_X_MSU_Audio_Complete.rar
 
-To compile the hack you need
+For my personal tests I'm using a mix of OC ReMix and music from the PSP version for the upgraded audio. I would really love to release a music pack with only music from the fans.
 
-* bass v14 (https://web.archive.org/web/20140710190910/http://byuu.org/files/bass_v14.tar.xz)
-* wav2msu (http://helmet.kafuka.org/thepile/Wav2msu)
-
-The rom needs to be named mmx_msu1.sfc and be the version 1.1 of the game.
-
-To distribute the hack you need
-
-* uCON64 (http://ucon64.sourceforge.net/)
-* 7-Zip (http://www.7-zip.org/)
-
-make.bat assemble the patch
-create_pcm.bat create the .pcm from the WAV files
-distribute.bat distribute the patch
-make_all.bat does everything
-
-===============
-= Music files =
-===============
-00 = Capcom Jingle (No Loop)
+If you want to make your own music pack, here's the music index:
 01 = Intro Stage
-02 = Sting Cameleon
+02 = Sting Chameleon
 03 = Launch Octopus
 04 = Armored Armadillo
 05 = Flame Mammoth
@@ -93,10 +76,24 @@ make_all.bat does everything
 31 = Sigma Battle 2 Intro
 32 = Game Credits
 
-For my personal tests I'm using a mix of OC ReMix and music from the PSP version for the upgraded audio. I would really love to release the final version of the hack with only music from the fans.
+=============
+= Compiling =
+=============
+Source is availabe on GitHub: https://github.com/mlarouche/MegamanX-MSU1
 
-========
-= TODO =
-========
-* Have a final music pack
-* Fix issues with BSNES manifest file
+To compile the hack you need
+
+* bass v14 (https://web.archive.org/web/20140710190910/http://byuu.org/files/bass_v14.tar.xz)
+* wav2msu (http://helmet.kafuka.org/thepile/Wav2msu)
+
+The rom needs to be named mmx_msu1.sfc and be the version 1.1 of the game.
+
+To distribute the hack you need
+
+* uCON64 (http://ucon64.sourceforge.net/)
+* 7-Zip (http://www.7-zip.org/)
+
+make.bat assemble the patch
+create_pcm.bat create the .pcm from the WAV files
+distribute.bat distribute the patch
+make_all.bat does everything

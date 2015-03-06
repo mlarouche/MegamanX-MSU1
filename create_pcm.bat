@@ -4,7 +4,7 @@ del *.pcm
 
 rem OCRemix ones
 wav2msu mmx_msu1_sting_chameleon.wav mmx_msu1-2.pcm
-wav2msu mmx_msu1_boomer_kuwanger.wav mmx_msu1-6.pcm
+wav2msu mmx_msu1-6.wav -l 989113
 wav2msu mmx_msu1_chill_penguin.wav mmx_msu1-7.pcm
 wav2msu mmx_msu1_spark_mandrill.wav mmx_msu1-8.pcm
 wav2msu mmx_msu1_storm_eagle.wav mmx_msu1-9.pcm
@@ -26,7 +26,6 @@ wav2msu mmx_msu1-1.wav -l 76400
 wav2msu mmx_msu1_launch_octopus.wav mmx_msu1-3.pcm
 wav2msu mmx_msu1_armored_armadillo.wav mmx_msu1-4.pcm
 wav2msu mmx_msu1_flame_mammoth.wav mmx_msu1-5.pcm
-rem wav2msu mmx_msu1-6.wav -l 279049
 wav2msu mmx_msu1_sigma_stage_1.wav mmx_msu1-10.pcm
 wav2msu mmx_msu1-12.wav -l 336895
 wav2msu mmx_msu1_boss_tension_2.wav mmx_msu1-19.pcm

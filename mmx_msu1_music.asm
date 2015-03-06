@@ -106,8 +106,8 @@ scope MSU_Main: {
 	
 	// Set track
 	tya
-	clc
-	sbc.b #$0F
+	sec
+	sbc.b #$10
 	tay
 	sta.w MSU_AUDIO_TRACK_LO
 	stz.w MSU_AUDIO_TRACK_HI
